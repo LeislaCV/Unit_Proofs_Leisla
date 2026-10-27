@@ -1,23 +1,26 @@
-const express=require('express');
-const mongoose= require('mongoose');
-const bodyparser=require('body-parser');
-const cookieParser=require('cookie-parser');
-const User=require('./models/user');
-const db=require('./config/config').get(process.env.NODE_ENV);
+//JS
+//common JS -> antigua, mas compatible
+//ES MODULE -> La mas reciente "import y from"
+const express = require('express');
+const mongoose = require('mongoose');
+const bodyparser = require('body-parser');
+const cookieParser = require('cookie-parser');
+const User = require('./models/user');
+const db = require('./config/config').get(process.env.NODE_ENV);
 const { auth } = require('./middleware/auth');
 
 //4 endopints viene toda la funcionalidad principal (login -> logica para iniciar sesión, LogOut -> Cambia el isAuth: False, Profile -> Obtiene el usuario, Register -> Dar de alta)
 
-const app=express();
+const app = express();
 // app use
-app.use(bodyparser.urlencoded({extended : false}));
+app.use(bodyparser.urlencoded({ extended: false }));
 app.use(bodyparser.json());
 app.use(cookieParser());
 
 // database connection
-mongoose.Promise=global.Promise;
-mongoose.connect(db.DATABASE,{ useNewUrlParser: true,useUnifiedTopology:true },function(err){
-    if(err) console.log(err);
+mongoose.Promise = global.Promise;
+mongoose.connect(db.DATABASE, { useNewUrlParser: true, useUnifiedTopology: true }, function (err) {
+    if (err) console.log(err);
     console.log("database is connected");
 });
 
@@ -92,23 +95,23 @@ app.post('/api/login', async function(req,res){
     }); 
 
 // get logged in user
-app.get('/api/profile',auth,function(req,res){
-        res.json({
-            isAuth: true,
-            id: req.user._id,
-            email: req.user.email,
-            name: req.user.firstname + req.user.lastname
-            
-        })
+app.get('/api/profile', auth, function (req, res) {
+    res.json({
+        isAuth: true,
+        id: req.user._id,
+        email: req.user.email,
+        name: req.user.firstname + req.user.lastname
+
+    })
 });
 
 
-app.get('/',function(req,res){
+app.get('/', function (req, res) {
     res.status(200).send(`Welcome to login , sign-up api`);
 });
 
 // listening port
-const PORT=process.env.PORT||3000;
-app.listen(PORT,()=>{
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
     console.log(`app is live at ${PORT}`);
 });
