@@ -1,5 +1,5 @@
 // models/user.js
-
+//Cuales son las clausulas, asignaciones en especifico para cada colección
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
@@ -33,21 +33,16 @@ const userSchema = mongoose.Schema({
 });
 
 // Encriptar la contraseña antes de guardar el usuario
-userSchema.pre('save', function (next) {
-    var user = this;
+userSchema.pre('save', async function (next) {
+    const user = this;
 
     if (user.isModified('password')) {
-        bcrypt.genSalt(SALT_I, function (err, salt) {
-            if (err) return next(err);
-
-            bcrypt.hash(user.password, salt, function (err, hash) {
-                if (err) return next(err);
-                user.password = hash;
-                next();
-            });
-        });
-    } else {
-        next();
+        try {
+            const salt= await bcrypt.genSalt(SALT_I);
+            const hash = await bcrypt.hash(user.password, salt);
+                user.password = hash; 
+        } catch (error) {        
+    }
     }
 });
 
@@ -61,8 +56,8 @@ userSchema.methods.comparepassword = function (candidatePassword, cb) {
 
 // Generar Token JWT al iniciar sesión
 userSchema.methods.generateToken = function (cb) {
-    var user = this;
-    var token = jwt.sign(user._id.toHexString(), config.SECRET);
+    const user = this;
+    const token = jwt.sign(user._id.toHexString(), config.SECRET);
 
     user.token = token;
     user.save(function (err, user) {
@@ -73,7 +68,7 @@ userSchema.methods.generateToken = function (cb) {
 
 // Método estático para validar un usuario mediante su Token
 userSchema.statics.findByToken = function (token, cb) {
-    var user = this;
+    const user = this;
 
     jwt.verify(token, config.SECRET, function (err, decode) {
         user.findOne({ "_id": decode, "token": token }, function (err, user) {
@@ -85,7 +80,7 @@ userSchema.statics.findByToken = function (token, cb) {
 
 // Eliminar token en el Logout
 userSchema.methods.deleteToken = function (token, cb) {
-    var user = this;
+    const user = this;
 
     user.updateOne({ $unset: { token: 1 } }, function (err, raw) {
         if (err) return cb(err);

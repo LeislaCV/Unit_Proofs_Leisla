@@ -6,6 +6,7 @@ const User=require('./models/user');
 const db=require('./config/config').get(process.env.NODE_ENV);
 const { auth } = require('./middleware/auth');
 
+//4 endopints viene toda la funcionalidad principal (login -> logica para iniciar sesión, LogOut -> Cambia el isAuth: False, Profile -> Obtiene el usuario, Register -> Dar de alta)
 
 const app=express();
 // app use
@@ -22,66 +23,72 @@ mongoose.connect(db.DATABASE,{ useNewUrlParser: true,useUnifiedTopology:true },f
 
 
 // adding new user (sign-up route)
-app.post('/api/register',function(req,res){
+app.post('/api/register', async function(req,res){
    // taking a user
+   if(req.body.password!=req.body.password2)return res.status(400).json({message: "password not match"});
    const newuser=new User(req.body);
-   console.log(newuser);
-
-   if(newuser.password!=newuser.password2)return res.status(400).json({message: "password not match"});
-   
-   User.findOne({email:newuser.email},function(err,user){
+   //Promesa
+    const user = await User.findOne({email:newuser.email});
+   //colback - son funciones que se ejecutan durante un proceso
        if(user) return res.status(400).json({ auth : false, message :"email exits"});
-
-       newuser.save((err,doc)=>{
-           if(err) {console.log(err);
-               return res.status(400).json({ success : false});}
-           res.status(200).json({
-               succes:true,
-               user : doc
-           });
-       });
-   });
+       try {
+            const user = await newuser.save();
+            return res.status(200).json({
+                succes:true,
+                user: user
+            });
+       } catch (error) {
+        console.log(error);
+        return res.status(400).json({ succes: false});
+       }
 });
 
-
 // login user
-app.post('/api/login', function(req,res){
-    let token=req.cookies.auth;
-    User.findByToken(token,(err,user)=>{
-        if(err) return  res(err);
-        if(user) return res.status(400).json({
-            error :true,
-            message:"You are already logged in"
+app.post('/api/login', async function(req,res){
+    //solo se usa LET cuando se redeclara un valor
+    const token=req.cookies.auth;
+    //Para evitar el uso de callbacks usamos funciones asincronas
+    //Manejamos el error con un try/catch
+    //Manejamos en donde ecista y ya esta  logueado con el IF
+    try {
+        const user = await User.findByToken(token); //almacena los tken dentro de la BD
+        if (user) return res.status(400).json({
+            error: true,
+            message: "You are already logged in"
+        })
+    } catch (error) {
+        console.log(error)
+        return res.status(500).json({message:error});
+    }
+
+    try {
+        const user = await User.findOne({'email':req.body.email})
+        if(!user) return res.status(400).json({isAuth : false, message : ' Auth failed'});
+        const {e, isMatch} = user.comparepassword(req.body.password);
+        if(!isMatch && e ) return res.status(400).json({ isAuth : false,message : "Auth failed"});
+        await user.generateToken();
+        return res.status(200).cookie('auth',user.token).json({
+            isAuth : true,
+            id : user._id
+            ,email : user.email
         });
-    
-        else{
-            User.findOne({'email':req.body.email},function(err,user){
-                if(!user) return res.json({isAuth : false, message : ' Auth failed ,email not found'});
-        
-                user.comparepassword(req.body.password,(err,isMatch)=>{
-                    if(!isMatch) return res.json({ isAuth : false,message : "password doesn't match"});
-        
-                user.generateToken((err,user)=>{
-                    if(err) return res.status(400).send(err);
-                    res.cookie('auth',user.token).json({
-                        isAuth : true,
-                        id : user._id
-                        ,email : user.email
-                    });
-                });    
-            });
-          });
-        }
-    });
+
+    } catch (error) {
+        console.log(error)
+        return res.status(500).json({message:error});   
+    }
 });
 
 //logout user
- app.get('/api/logout',auth,function(req,res){
-        req.user.deleteToken(req.token,(err,user)=>{
-            if(err) return res.status(400).send(err);
-            res.sendStatus(200);
-        });
-
+ app.get('/api/logout',auth, async function(req,res){
+    try {
+        await req.user.deleteToken();
+        res.send.status(200);
+    } catch (error) {
+        console.log(error);
+        if(err) return res.status(400).json({msg: err});
+        
+    }
     }); 
 
 // get logged in user

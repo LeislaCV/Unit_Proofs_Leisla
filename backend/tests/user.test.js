@@ -1,7 +1,11 @@
 const mongoose = require('mongoose');
 const { MongoMemoryServer } = require('mongodb-memory-server');
-const request = require('supertest');
+const request = require('supertest'); //se encarga totalmente de hacer las pruenas
 const User = require('../models/user');
+
+//Guarda las pruebas unitarias, se encarga de realizar pruebas y atuomotizarlas
+//Las ejecutaremos en base a un script
+//Monfo Server -> Es una libreria que levanta  una instanica virtal para hacer las pruebas, guarda un registro y valida 
 
 // NOTA: Para las pruebas de integración con rutas, exporta app desde tu archivo principal:
 // module.exports = app;

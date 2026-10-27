@@ -1,5 +1,6 @@
 // middleware/auth.js
 
+// guarda la configuracion de como es que un usuario se puede o no autenticar, trabaja con una propiedad y lo unico que valida si el usuario esta isAuth
 const User = require('../models/user');
 
 let auth = (req, res, next) => {
